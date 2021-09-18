@@ -43,16 +43,16 @@ public final class Lexer {
      */
     public Token lexToken() {
         if (peek("@","[A-Za-z]")||peek("[A-Za-z]")) return lexIdentifier();
-        //if (peek() return lexNumber();
+        else if (peek("[0-9]")||peek("-")) return lexNumber();
         else if (peek("'")) return lexCharacter();
         //else if (peek("'\"'([^\"\\n\\r\\\\] | escape)* '\"'")) return lexString();
         //if (peek()) lexEscape(); return;
         //else if (peek("[!=] '='? | '&&' | '||' | 'any character'")) return lexOperator();
-        else throw new ParseException("Token not recognized beginning at index ...", chars.index);
+        else throw new ParseException("invalid token beginning ...", chars.index);
     }
 
     public Token lexIdentifier() {
-        match("@");//eats up @ if its there
+        match("@");//eats up @ if it's there
         match("[A-Za-z]");//eats up first letter (we already checked that it's there)
 
         while(peek("[A-Za-z0-9_-]")){
@@ -63,7 +63,27 @@ public final class Lexer {
     }
 
     public Token lexNumber() {
-        throw new UnsupportedOperationException(); //TODO
+        if (peek("-","0","[^.]")) {throw new ParseException("negative integer must be nonzero", chars.index);}
+        else if (peek("0","[^.]")){//leading zeros case
+            match("0");
+            return chars.emit(Token.Type.INTEGER);
+        }else {
+            match("-");//eat negative if it's there
+            while(peek("[0-9]")){
+                match("[0-9]");
+                if (peek(".","[^0-9]")){//period does not belong to decimal
+                    return chars.emit(Token.Type.INTEGER);
+                }
+                else {//decimal
+                    match(".");
+                    while(peek("[0-9]")){
+                        match("[0-9]");
+                    }
+                    return chars.emit(Token.Type.DECIMAL);
+                }
+            }
+        }
+        return chars.emit(Token.Type.INTEGER);
     }
 
     public Token lexCharacter() {
