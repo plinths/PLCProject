@@ -42,9 +42,9 @@ public final class Lexer {
      * by {@link #lex()}
      */
     public Token lexToken() {
-       // if (peek("@?[A-Za-z]","[A-Za-z0-9_-]*")) return lexIdentifier();
+        if (peek("@","[A-Za-z]")||peek("[A-Za-z]")) return lexIdentifier();
         //if (peek() return lexNumber();
-        if (peek("'")) return lexCharacter();
+        else if (peek("'")) return lexCharacter();
         //else if (peek("'\"'([^\"\\n\\r\\\\] | escape)* '\"'")) return lexString();
         //if (peek()) lexEscape(); return;
         //else if (peek("[!=] '='? | '&&' | '||' | 'any character'")) return lexOperator();
@@ -52,7 +52,14 @@ public final class Lexer {
     }
 
     public Token lexIdentifier() {
-        throw new UnsupportedOperationException(); //TODO
+        match("@");//eats up @ if its there
+        match("[A-Za-z]");//eats up first letter (we already checked that it's there)
+
+        while(peek("[A-Za-z0-9_-]")){
+            match("[A-Za-z0-9_-]");
+        }
+
+        return chars.emit(Token.Type.IDENTIFIER);
     }
 
     public Token lexNumber() {
