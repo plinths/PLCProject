@@ -45,7 +45,7 @@ public final class Lexer {
         if (peek("@","[A-Za-z]")||peek("[A-Za-z]")) return lexIdentifier();
         else if (peek("[0-9]")||peek("-")) return lexNumber();
         else if (peek("'")) return lexCharacter();
-        //else if (peek("'\"'([^\"\\n\\r\\\\] | escape)* '\"'")) return lexString();
+        else if (peek("\"")) return lexString();
         //if (peek()) lexEscape(); return;
         //else if (peek("[!=] '='? | '&&' | '||' | 'any character'")) return lexOperator();
         else throw new ParseException("invalid token beginning ...", chars.index);
@@ -103,7 +103,22 @@ public final class Lexer {
     }
 
     public Token lexString() {
-        throw new UnsupportedOperationException(); //TODO
+        match("\"");
+
+        while(peek("[^\"]")){//until we meet the end quotes
+            if(peek("[^\\\\]")){
+                match("[^\\\\]");
+            }
+            else if (peek("\\\\","[bnrt'\"\\\\]")){//handling escape characters
+                match("\\\\","[bnrt'\"\\\\]");
+            }
+            else throw new ParseException("invalid escape",chars.index);
+        }
+        if (!match("\"")) {//closing quotes
+            throw new ParseException("unterminated string", chars.index);
+        }
+
+        return chars.emit(Token.Type.STRING);
     }
 
     public void lexEscape() {
