@@ -15,20 +15,22 @@ import java.util.List;
  * invalid.
  *
  * The {@link #peek(String...)} and {@link #match(String...)} functions are * helpers you need to use, they will make the implementation a lot easier. */
+
 public final class Lexer {
 
     private final CharStream chars;
+    private final List<Token> tokens = new ArrayList<>();
 
     public Lexer(String input) {
         chars = new CharStream(input);
     }
-
     /**
      * Repeatedly lexes the input using {@link #lexToken()}, also skipping over
      * whitespace where appropriate.
      */
     public List<Token> lex() {
-        throw new UnsupportedOperationException(); //TODO
+        tokens.add(lexToken());
+        return tokens;
     }
 
     /**
@@ -40,7 +42,13 @@ public final class Lexer {
      * by {@link #lex()}
      */
     public Token lexToken() {
-        throw new UnsupportedOperationException(); //TODO
+       // if (peek("@?[A-Za-z]","[A-Za-z0-9_-]*")) return lexIdentifier();
+        //if (peek() return lexNumber();
+        if (peek("'")) return lexCharacter();
+        //else if (peek("'\"'([^\"\\n\\r\\\\] | escape)* '\"'")) return lexString();
+        //if (peek()) lexEscape(); return;
+        //else if (peek("[!=] '='? | '&&' | '||' | 'any character'")) return lexOperator();
+        else throw new ParseException("Token not recognized beginning at index ...", chars.index);
     }
 
     public Token lexIdentifier() {
@@ -52,7 +60,19 @@ public final class Lexer {
     }
 
     public Token lexCharacter() {
-        throw new UnsupportedOperationException(); //TODO
+        match("'");//eats up first apostrophe
+        if(peek("[^'\\n\\r\\\\]")){//first possibility: any char but ...
+            match("[^'\\n\\r\\\\]");
+        }
+        else if(peek("\\\\","[bnrt'\"\\\\]")) {//escape
+            match("\\\\","[bnrt'\"\\\\]");
+        }
+        else throw new ParseException("empty apostrophes", chars.index);
+
+        if (!peek("'")) throw new ParseException("No closing apostrophe", chars.index);
+        else match("'");
+
+        return chars.emit(Token.Type.CHARACTER);
     }
 
     public Token lexString() {
@@ -73,7 +93,13 @@ public final class Lexer {
      * return true if the next characters are {@code 'a', 'b', 'c'}.
      */
     public boolean peek(String... patterns) {
-        throw new UnsupportedOperationException(); //TODO (in Lecture)
+
+        for ( int i = 0; i < patterns.length; i++){
+            if (!chars.has(i) || !String.valueOf(chars.get(i)).matches(patterns[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -82,7 +108,14 @@ public final class Lexer {
      * true. Hint - it's easiest to have this method simply call peek.
      */
     public boolean match(String... patterns) {
-        throw new UnsupportedOperationException(); //TODO (in Lecture)
+        boolean peek = peek(patterns);
+        if (peek){
+            for (int i =0;i<patterns.length;i++){
+                chars.advance();
+            }
+        }
+
+        return peek;
     }
 
     /**
