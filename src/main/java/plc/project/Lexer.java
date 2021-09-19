@@ -64,23 +64,24 @@ public final class Lexer {
 
     public Token lexNumber() {
         if (peek("-","0","[^.]")) {throw new ParseException("negative integer must be nonzero", chars.index);}
-        else if (peek("0","[^.]")){//leading zeros case
+        if (peek("0","[^.]")){//leading zeros case : read as separate zeros
             match("0");
             return chars.emit(Token.Type.INTEGER);
-        }else {
-            match("-");//eat negative if it's there
-            while(peek("[0-9]")){
-                match("[0-9]");
-                if (peek(".","[^0-9]")){//period does not belong to decimal
-                    return chars.emit(Token.Type.INTEGER);
+        }
+        match("-");//eat negative if its there
+        //nothing for multiple negatives
+
+        while(peek("[0-9]")){
+            match("[0-9]");
+            if(peek("\\.","[0-9]")){//it's a valid decimal
+                match("\\.","[0-9]");
+                while(peek("[0-9]")){
+                    match("[0-9]");
                 }
-                else {//decimal
-                    match(".");
-                    while(peek("[0-9]")){
-                        match("[0-9]");
-                    }
-                    return chars.emit(Token.Type.DECIMAL);
-                }
+                return chars.emit(Token.Type.DECIMAL);
+            }
+            if(peek("\\.","[^0-9]")){//nothing after decimal
+                return chars.emit(Token.Type.INTEGER);
             }
         }
         return chars.emit(Token.Type.INTEGER);
