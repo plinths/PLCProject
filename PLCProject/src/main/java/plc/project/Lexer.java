@@ -31,10 +31,8 @@ public final class Lexer {
     public List<Token> lex() {
         List<Token> tokens = new ArrayList<>();
         while (chars.has(0)) {
-            if (peek("[ ]")) {
-                match("[ ]");
-                chars.skip();
-            }
+            if (peek("[ \b\n\r\t]"))
+                lexEscape();
             tokens.add(lexToken());
 
         }
@@ -132,12 +130,26 @@ public final class Lexer {
     }
 
     public void lexEscape() {
-        throw new UnsupportedOperationException(); //TODO
+        match("[ \b\n\r\t]");
+        chars.skip();
     }
 
     public Token lexOperator() {
-        match("[!=]=|&&|[|]+|.");
-        return chars.emit(Token.Type.OPERATOR);//TODO
+        if (peek("[ \b\n\r\t\"]")) {
+
+        }
+        else {
+            if (peek("!|=")) {
+                match("!|=");
+                if (peek("!|=")) {
+                    match("!|=");
+                }
+            }
+            else {
+                match("[!=]=|=|&&|[|]+|[^! ]*.");
+            }
+        }
+        return chars.emit(Token.Type.OPERATOR);
     }
 
     /**
