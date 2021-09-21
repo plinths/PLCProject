@@ -152,12 +152,7 @@ public final class Lexer {
                     match("\\+");
                 }
             }
-            else if (peek("-")) {
-                match("-");
-                if (peek("-")) {
-                    match("-");
-                }
-            }
+
             else if (peek("[\\+\\-\\*\\/\\%\\&\\|\\^\\>\\<]")) {
                 match("[\\+\\-\\*\\/\\%\\&\\|\\^\\>\\<]");
                 if (peek("=")) {
@@ -168,6 +163,9 @@ public final class Lexer {
                     if (peek("=")) {
                         match("=");
                     }
+                }
+                if (peek("-")) {
+                    match("-");
                 }
             }
             else {
