@@ -33,8 +33,9 @@ public final class Lexer {
         while (chars.has(0)) {
             if (peek("[ \b\n\r\t]"))
                 lexEscape();
-            tokens.add(lexToken());
-
+            else {
+                tokens.add(lexToken());
+            }
         }
         return tokens;
     }
@@ -143,6 +144,12 @@ public final class Lexer {
                 match("!|=");
                 if (peek("!|=")) {
                     match("!|=");
+                }
+            }
+            else if (peek("\\+")) {
+                match("\\+");
+                if (peek("\\+")) {
+                    match("\\+");
                 }
             }
             else {
