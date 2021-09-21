@@ -106,6 +106,8 @@ public class LexerTests {
                 Arguments.of("Comparison", "!=", true),
                 Arguments.of("non-standard","(H",false),
                 Arguments.of("not","!",true),
+                Arguments.of("mod","%",true),
+                Arguments.of("decrement","--",true),
                 Arguments.of("super equal", "++",true),
                 Arguments.of("Space", " ", false),
                 Arguments.of("Tab", "\t", false)

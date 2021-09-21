@@ -51,7 +51,7 @@ public final class Lexer {
     public Token lexToken() {
 
         if (peek("@","[A-Za-z]")||peek("[A-Za-z]")) return lexIdentifier();
-        else if (peek("[0-9]")||peek("-")) return lexNumber();
+        else if (peek("[0-9]")||(peek("-")&&String.valueOf(chars.get(1)).matches("[0-9]"))) return lexNumber();
         else if (peek("'")) return lexCharacter();
         else if (peek("\"")) return lexString();
         //if (peek()) lexEscape(); return;
@@ -150,6 +150,24 @@ public final class Lexer {
                 match("\\+");
                 if (peek("\\+")) {
                     match("\\+");
+                }
+            }
+            else if (peek("-")) {
+                match("-");
+                if (peek("-")) {
+                    match("-");
+                }
+            }
+            else if (peek("[\\+\\-\\*\\/\\%\\&\\|\\^\\>\\<]")) {
+                match("[\\+\\-\\*\\/\\%\\&\\|\\^\\>\\<]");
+                if (peek("=")) {
+                    match("=");
+                }
+                else if (peek("[><]")) {
+                    match("[><]");
+                    if (peek("=")) {
+                        match("=");
+                    }
                 }
             }
             else {
