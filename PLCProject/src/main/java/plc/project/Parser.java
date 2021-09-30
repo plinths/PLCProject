@@ -1,6 +1,10 @@
 package plc.project;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+
+import static java.util.Collections.emptyList;
 
 /**
  * The parser takes the sequence of tokens emitted by the lexer and turns that
@@ -84,7 +88,16 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Statement parseStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        if (peek(Token.Type.IDENTIFIER)) {
+            if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral() == "(")) {
+                return new Ast.Statement.Expression(parseExpression());
+            }
+            else if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral() == "=")) {
+                return new Ast.Statement.Assignment(parseExpression(),parseExpression());
+            }
+        }
+        Ast.Statement.Expression a = new Ast.Statement.Expression( new Ast.Expression.Function(tokens.get(0).getLiteral(), Arrays.asList()));
+        return a;
     }
 
     /**
@@ -145,7 +158,23 @@ public final class Parser {
      * Parses the {@code expression} rule.
      */
     public Ast.Expression parseExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+
+        if (peek(Token.Type.IDENTIFIER)) {
+            match(Token.Type.IDENTIFIER);
+            if ((tokens.get(0).getType() == Token.Type.OPERATOR) && (tokens.get(0).getLiteral() == "(")) {
+                return new Ast.Expression.Function(tokens.get(-1).getLiteral(),Arrays.asList());
+            }
+            else {
+                if (tokens.get(0).getLiteral()=="=") {
+                    match(Token.Type.OPERATOR);
+                    return new Ast.Expression.Access(Optional.empty(),tokens.get(-2).getLiteral());
+                }
+                return new Ast.Expression.Access(Optional.empty(),tokens.get(-1).getLiteral());
+            }
+
+
+        }
+        return new Ast.Expression.Literal(tokens.get(0).getLiteral());
     }
 
     /**
@@ -197,7 +226,26 @@ public final class Parser {
      * {@code peek(Token.Type.IDENTIFIER)} and {@code peek("literal")}.
      */
     private boolean peek(Object... patterns) {
-        throw new UnsupportedOperationException(); //TODO (in lecture)
+        for (int i =0;i<patterns.length;i++) {
+            if (!tokens.has(i)) {
+                return false;
+            }
+            else if (patterns[i] instanceof Token.Type) {
+                if (patterns[i] != tokens.get(i).getType()) {
+                    return false;
+                }
+            }
+            else if (patterns[i] instanceof String) {
+                if (!patterns[i].equals(tokens.get(i).getLiteral())) {
+                    return false;
+                }
+            }
+            else {
+                throw new AssertionError("Invalid pattern object: " + patterns[i].getClass());
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -205,7 +253,16 @@ public final class Parser {
      * and advances the token stream.
      */
     private boolean match(Object... patterns) {
-        throw new UnsupportedOperationException(); //TODO (in lecture)
+
+        boolean peek = peek(patterns);
+
+        if (peek) {
+            for (int i =0; i< patterns.length;i++) {
+                tokens.advance();
+            }
+        }
+
+        return peek;
     }
 
     private static final class TokenStream {
