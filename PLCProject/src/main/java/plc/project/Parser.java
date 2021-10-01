@@ -160,21 +160,18 @@ public final class Parser {
     public Ast.Expression parseExpression() throws ParseException {
 
         if (peek(Token.Type.IDENTIFIER)) {
-            match(Token.Type.IDENTIFIER);
+
             if ((tokens.get(0).getType() == Token.Type.OPERATOR) && (tokens.get(0).getLiteral() == "(")) {
+                match(Token.Type.IDENTIFIER);
                 return new Ast.Expression.Function(tokens.get(-1).getLiteral(),Arrays.asList());
             }
             else {
-                if (tokens.get(0).getLiteral()=="=") {
-                    match(Token.Type.OPERATOR);
-                    return new Ast.Expression.Access(Optional.empty(),tokens.get(-2).getLiteral());
-                }
-                return new Ast.Expression.Access(Optional.empty(),tokens.get(-1).getLiteral());
+                return parsePrimaryExpression();
             }
 
 
         }
-        return new Ast.Expression.Literal(tokens.get(0).getLiteral());
+        return parsePrimaryExpression();
     }
 
     /**
@@ -212,7 +209,67 @@ public final class Parser {
      * not strictly necessary.
      */
     public Ast.Expression parsePrimaryExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+
+        if (peek(Token.Type.INTEGER)) {
+            match(Token.Type.INTEGER);
+            return new Ast.Expression.Literal(tokens.get(-1).getLiteral());
+        }
+        else if (peek(Token.Type.STRING)) {
+            match(Token.Type.STRING);
+            String temp = tokens.get(-1).getLiteral();
+            temp= temp.substring(1,temp.length()-1);
+            return new Ast.Expression.Literal(temp);
+        }
+        else if (peek(Token.Type.CHARACTER)) {
+            match(Token.Type.CHARACTER);
+            String temp = tokens.get(-1).getLiteral();
+            temp= temp.substring(1,temp.length()-1);
+            return new Ast.Expression.Literal(temp);
+        }
+        else if (peek(Token.Type.DECIMAL)) {
+            match(Token.Type.DECIMAL);
+            return new Ast.Expression.Literal(tokens.get(-1).getLiteral());
+        }
+
+        else if (peek((Token.Type.IDENTIFIER))) {
+            match(Token.Type.IDENTIFIER);
+            String temp = tokens.get(-1).getLiteral();
+            if (temp==("NIL")||temp=="TRUE"||temp=="FALSE") {
+                if (temp=="TRUE")
+                    return new Ast.Expression.Literal(Boolean.TRUE);
+                else if (temp=="FALSE")
+                    return new Ast.Expression.Literal(Boolean.FALSE);
+                else
+                    return new Ast.Expression.Literal(null);
+            }
+            else {
+                if (tokens.get(0).getLiteral()=="(")
+                    return new Ast.Expression.Function(tokens.get(-1).getLiteral(),Arrays.asList());
+                return new Ast.Expression.Access(Optional.empty(),temp);
+            }
+
+        }
+        else if (peek(Token.Type.OPERATOR)) {
+            match(Token.Type.OPERATOR);
+            if (tokens.get(-1).getLiteral()=="(") {
+                int i=0;
+                while (true) {
+                    if (tokens.get(i).getLiteral()!=")"&&tokens.get(i).getType()==Token.Type.OPERATOR) {
+                        return new Ast.Expression.Binary(tokens.get(i).getLiteral(),parsePrimaryExpression(),parsePrimaryExpression());
+                    }
+                    if (i==100) {
+                        break;
+                    }
+                    i++;
+                }
+                return new Ast.Expression.Group(parseExpression());
+            }
+            else {
+                return parsePrimaryExpression();
+            }
+        }
+
+        return new Ast.Expression.Literal("idontknowwhattoputhere");
     }
 
     /**
