@@ -88,7 +88,7 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Statement parseStatement() throws ParseException {
-        if (peek(Token.Type.IDENTIFIER)) {
+        /*if (peek(Token.Type.IDENTIFIER)) {
             if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral() == "(")) {
                 return new Ast.Statement.Expression(parseExpression());
             }
@@ -97,7 +97,8 @@ public final class Parser {
             }
         }
         Ast.Statement.Expression a = new Ast.Statement.Expression( new Ast.Expression.Function(tokens.get(0).getLiteral(), Arrays.asList()));
-        return a;
+        return a;*/
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -158,7 +159,7 @@ public final class Parser {
      * Parses the {@code expression} rule.
      */
     public Ast.Expression parseExpression() throws ParseException {
-
+/*
         if (peek(Token.Type.IDENTIFIER)) {
 
             if ((tokens.get(0).getType() == Token.Type.OPERATOR) && (tokens.get(0).getLiteral() == "(")) {
@@ -172,6 +173,9 @@ public final class Parser {
 
         }
         return parsePrimaryExpression();
+
+ */
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -209,7 +213,7 @@ public final class Parser {
      * not strictly necessary.
      */
     public Ast.Expression parsePrimaryExpression() throws ParseException {
-
+/*
         if (peek(Token.Type.INTEGER)) {
             match(Token.Type.INTEGER);
             return new Ast.Expression.Literal(tokens.get(-1).getLiteral());
@@ -270,6 +274,9 @@ public final class Parser {
         }
 
         return new Ast.Expression.Literal("idontknowwhattoputhere");
+
+ */
+        throw new UnsupportedOperationException();
     }
 
     /**
