@@ -31,7 +31,17 @@ public final class Parser {
      * Parses the {@code source} rule.
      */
     public Ast.Source parseSource() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        List<Ast.Global> globalList = new ArrayList<>();
+        List<Ast.Function> functionList = new ArrayList<>();
+
+        while (peek("LIST")||peek("VAR")||peek("VAL")){
+            globalList.add(parseGlobal());
+        }
+        while(peek("FUN")){
+            functionList.add(parseFunction());
+        }
+
+        return new Ast.Source(globalList,functionList);
     }
 
     /**
@@ -39,7 +49,13 @@ public final class Parser {
      * next tokens start a field, aka {@code LET}.
      */
     public Ast.Global parseGlobal() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        if (peek("LIST")){
+            return parseList();
+        }else if (peek("VAR")){
+            return parseMutable();
+        }else if (peek("VAL")){
+            return parseImmutable();
+        }else throw new ParseException("stopped in parse Global",tokens.get(0).getIndex());
     }
 
     /**
