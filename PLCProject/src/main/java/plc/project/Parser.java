@@ -1,5 +1,8 @@
 package plc.project;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -88,17 +91,18 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Statement parseStatement() throws ParseException {
-        /*if (peek(Token.Type.IDENTIFIER)) {
-            if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral() == "(")) {
-                return new Ast.Statement.Expression(parseExpression());
-            }
-            else if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral() == "=")) {
-                return new Ast.Statement.Assignment(parseExpression(),parseExpression());
+        if (peek(Token.Type.IDENTIFIER)) {
+            while (tokens.has(0)) {
+                if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral().matches("\\("))) {
+                    return new Ast.Statement.Expression(parseExpression());
+                }
+                else if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral().matches("="))) {
+                    return new Ast.Statement.Assignment(parseExpression(),parseExpression());
+                }
             }
         }
         Ast.Statement.Expression a = new Ast.Statement.Expression( new Ast.Expression.Function(tokens.get(0).getLiteral(), Arrays.asList()));
-        return a;*/
-        throw new UnsupportedOperationException();
+        return a;
     }
 
     /**
@@ -159,7 +163,7 @@ public final class Parser {
      * Parses the {@code expression} rule.
      */
     public Ast.Expression parseExpression() throws ParseException {
-/*
+
         if (peek(Token.Type.IDENTIFIER)) {
 
             if ((tokens.get(0).getType() == Token.Type.OPERATOR) && (tokens.get(0).getLiteral() == "(")) {
@@ -173,9 +177,6 @@ public final class Parser {
 
         }
         return parsePrimaryExpression();
-
- */
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -213,26 +214,30 @@ public final class Parser {
      * not strictly necessary.
      */
     public Ast.Expression parsePrimaryExpression() throws ParseException {
-/*
+
         if (peek(Token.Type.INTEGER)) {
             match(Token.Type.INTEGER);
-            return new Ast.Expression.Literal(tokens.get(-1).getLiteral());
+            BigInteger temp = new BigInteger(tokens.get(-1).getLiteral());
+            return new Ast.Expression.Literal(temp);
         }
         else if (peek(Token.Type.STRING)) {
             match(Token.Type.STRING);
             String temp = tokens.get(-1).getLiteral();
-            temp= temp.substring(1,temp.length()-1);
+            temp=temp.replace("\"","");
+            temp=temp.replace("\\n","\n");
             return new Ast.Expression.Literal(temp);
         }
         else if (peek(Token.Type.CHARACTER)) {
             match(Token.Type.CHARACTER);
             String temp = tokens.get(-1).getLiteral();
-            temp= temp.substring(1,temp.length()-1);
-            return new Ast.Expression.Literal(temp);
+            temp =temp.replace("'","");
+            //temp= temp.substring(1,temp.length()-1);
+            Character tempChar = temp.charAt(0);
+            return new Ast.Expression.Literal(tempChar);
         }
         else if (peek(Token.Type.DECIMAL)) {
             match(Token.Type.DECIMAL);
-            return new Ast.Expression.Literal(tokens.get(-1).getLiteral());
+            return new Ast.Expression.Literal(new BigDecimal(tokens.get(-1).getLiteral()));
         }
 
         else if (peek((Token.Type.IDENTIFIER))) {
@@ -247,18 +252,43 @@ public final class Parser {
                     return new Ast.Expression.Literal(null);
             }
             else {
-                if (tokens.get(0).getLiteral()=="(")
-                    return new Ast.Expression.Function(tokens.get(-1).getLiteral(),Arrays.asList());
+                if (tokens.has(0)) {
+                    if (tokens.get(0).getLiteral().matches("\\(")) {
+                        match(Token.Type.OPERATOR);
+                        if (tokens.get(0).getLiteral().matches("\\)")) {
+                            return new Ast.Expression.Function(temp, Arrays.asList());
+                        }
+                        List<Ast.Expression> tempList= new ArrayList<>();
+                        while (tokens.has(0)) {
+                            tempList.add(parsePrimaryExpression());
+                            match(Token.Type.OPERATOR);
+                        }
+                        return new Ast.Expression.Function(temp, tempList);
+                    }
+                    else if (tokens.get(0).getLiteral().matches("\\[")) {
+                        match(Token.Type.OPERATOR);
+                        return new Ast.Expression.Access(Optional.of(parsePrimaryExpression()),temp);
+                    }
+                    else if (tokens.get(0).getLiteral().matches("=")) {
+                        match(Token.Type.OPERATOR);
+                        return new Ast.Expression.Access(Optional.empty(),temp);
+                    }
+                }
+
                 return new Ast.Expression.Access(Optional.empty(),temp);
             }
 
         }
         else if (peek(Token.Type.OPERATOR)) {
             match(Token.Type.OPERATOR);
-            if (tokens.get(-1).getLiteral()=="(") {
+            if (tokens.has(0)) {
+                if (tokens.get(-1).getLiteral().matches("\\(")) {
+                    return new Ast.Expression.Group(parseExpression());
+                /*
                 int i=0;
                 while (true) {
-                    if (tokens.get(i).getLiteral()!=")"&&tokens.get(i).getType()==Token.Type.OPERATOR) {
+                    if (tokens.get(i).getLiteral().matches("\\)")) {
+
                         return new Ast.Expression.Binary(tokens.get(i).getLiteral(),parsePrimaryExpression(),parsePrimaryExpression());
                     }
                     if (i==100) {
@@ -266,7 +296,10 @@ public final class Parser {
                     }
                     i++;
                 }
-                return new Ast.Expression.Group(parseExpression());
+
+                 */
+
+                }
             }
             else {
                 return parsePrimaryExpression();
@@ -274,9 +307,6 @@ public final class Parser {
         }
 
         return new Ast.Expression.Literal("idontknowwhattoputhere");
-
- */
-        throw new UnsupportedOperationException();
     }
 
     /**
