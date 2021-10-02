@@ -40,7 +40,6 @@ public final class Parser {
         while(peek("FUN")){
             functionList.add(parseFunction());
         }
-
         return new Ast.Source(globalList,functionList);
     }
 
@@ -63,7 +62,25 @@ public final class Parser {
      * next token declares a list, aka {@code LIST}.
      */
     public Ast.Global parseList() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        List<Ast.Expression> elements = new ArrayList<Ast.Expression>();//list to construct list expression
+
+        match("LIST", Token.Type.IDENTIFIER);
+        String name = tokens.get(-1).getLiteral();
+        match("=","[");//peek first for error checking?
+        elements.add(parseExpression());
+
+        //while loop to add rest of expressions (',' expression)*
+        while(peek(",")){
+            match(",");
+            elements.add(parseExpression());
+        }
+
+        match("]");
+
+        Ast.Expression.PlcList plc = new Ast.Expression.PlcList(elements);
+        Optional<Ast.Expression> list = Optional.of(plc);
+
+        return new Ast.Global(name,Boolean.FALSE,list);//global to return with elements in constructor
     }
 
     /**
@@ -71,7 +88,19 @@ public final class Parser {
      * next token declares a mutable global variable, aka {@code VAR}.
      */
     public Ast.Global parseMutable() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        match("VAR");
+        match(Token.Type.IDENTIFIER);
+
+        String name = tokens.get(-1).getLiteral();
+        Optional<Ast.Expression> arg = Optional.empty();
+
+        if(peek("=")){
+            match("=");
+            Ast.Expression expr = parseExpression();
+             arg = Optional.of(expr);
+        }
+
+        return new Ast.Global(name,Boolean.TRUE,arg);
     }
 
     /**
@@ -79,7 +108,17 @@ public final class Parser {
      * next token declares an immutable global variable, aka {@code VAL}.
      */
     public Ast.Global parseImmutable() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        match("VAL");
+        match(Token.Type.IDENTIFIER);
+
+        String name = tokens.get(-1).getLiteral();
+
+        match("=");
+
+        Ast.Expression expr = parseExpression();
+        Optional<Ast.Expression> arg = Optional.of(expr);
+
+        return new Ast.Global(name,Boolean.FALSE,arg);
     }
 
     /**
