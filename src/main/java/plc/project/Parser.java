@@ -126,7 +126,33 @@ public final class Parser {
      * next tokens start a method, aka {@code DEF}.
      */
     public Ast.Function parseFunction() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        match("FUN");
+        match(Token.Type.IDENTIFIER);
+
+        String name = tokens.get(-1).getLiteral();
+
+        List<String> arguments = new ArrayList<>();
+        List<Ast.Statement> statements = new ArrayList<>();
+
+        match("(");
+
+        if (peek(Token.Type.IDENTIFIER)){
+            match(Token.Type.IDENTIFIER);
+            arguments.add(tokens.get(-1).getLiteral());//first argument
+
+            while(peek(",")){
+                match(",");
+                match(Token.Type.IDENTIFIER);
+                arguments.add(tokens.get(-1).getLiteral());
+            }
+        }
+
+        match(")");
+        match("DO");
+        statements = parseBlock();
+        match("END");
+
+        return new Ast.Function(name,arguments,statements);
     }
 
     /**
