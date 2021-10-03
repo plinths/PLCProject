@@ -62,7 +62,7 @@ public final class Parser {
      * next token declares a list, aka {@code LIST}.
      */
     public Ast.Global parseList() throws ParseException {
-        List<Ast.Expression> elements = new ArrayList<Ast.Expression>();//list to construct list expression
+        List<Ast.Expression> elements = new ArrayList<>();//list to construct list expression
 
         match("LIST", Token.Type.IDENTIFIER);
         String name = tokens.get(-1).getLiteral();
@@ -132,7 +132,7 @@ public final class Parser {
         String name = tokens.get(-1).getLiteral();
 
         List<String> arguments = new ArrayList<>();
-        List<Ast.Statement> statements = new ArrayList<>();
+        List<Ast.Statement> statements;
 
         match("(");
 
@@ -160,7 +160,13 @@ public final class Parser {
      * preceding token indicates the opening a block.
      */
     public List<Ast.Statement> parseBlock() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        List<Ast.Statement> statements = new ArrayList<>();
+
+        while(!peek("END")){
+            statements.add(parseStatement());
+        }
+
+        return statements;
     }
 
     /**
