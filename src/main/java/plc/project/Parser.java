@@ -176,15 +176,14 @@ public final class Parser {
      */
     public Ast.Statement parseStatement() throws ParseException {
 
-
        if (peek("LET")){
            return parseDeclarationStatement();
        }
 
-        Ast.Expression expr = parseExpression();
+       Ast.Expression expr = parseExpression();
 
-       if (!match(";")){
-           throw new ParseException("Expected semicolon.",-1);
+       if ((tokens.get(-1).getLiteral().equals(";"))){
+           throw new ParseException("Expected semicolon in Statement.",-1);
            //TODO: handle actual character index instead of -1
        }
 
@@ -487,7 +486,7 @@ public final class Parser {
                 }
             }
             else {
-                return parsePrimaryExpression();
+                return parsePrimaryExpression();//?? wtf
             }
         }
 
