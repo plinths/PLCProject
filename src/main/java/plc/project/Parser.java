@@ -175,18 +175,20 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Statement parseStatement() throws ParseException {
-        if (peek(Token.Type.IDENTIFIER)) {
-            while (tokens.has(0)) {
-                if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral().matches("\\("))) {
-                    return new Ast.Statement.Expression(parseExpression());
-                }
-                else if ((tokens.get(1).getType() == Token.Type.OPERATOR) && (tokens.get(1).getLiteral().matches("="))) {
-                    return new Ast.Statement.Assignment(parseExpression(),parseExpression());
-                }
-            }
-        }
-        Ast.Statement.Expression a = new Ast.Statement.Expression( new Ast.Expression.Function(tokens.get(0).getLiteral(), Arrays.asList()));
-        return a;
+
+
+       if (peek("LET")){
+           return parseDeclarationStatement();
+       }
+
+        Ast.Expression expr = parseExpression();
+
+       if (!match(";")){
+           throw new ParseException("Expected semicolon.",-1);
+           //TODO: handle actual character index instead of -1
+       }
+
+       return new Ast.Statement.Expression(expr);
     }
 
     /**
@@ -195,7 +197,26 @@ public final class Parser {
      * statement, aka {@code LET}.
      */
     public Ast.Statement.Declaration parseDeclarationStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        match("LET");
+
+        if(!match(Token.Type.IDENTIFIER)){
+            throw new ParseException("Expected Identifier",-1);
+            //TODO : HANDLE actual character index instead of -1
+        }
+        String name = tokens.get(-1).getLiteral();
+        Optional<Ast.Expression> value = Optional.empty();
+
+        if (match("=")){
+            value = Optional.of(parseExpression());
+        }
+
+        if(!match(";")){
+            throw new ParseException("Expected semicolon.", -1);
+            //TODO: handle actual character index
+        }
+
+        return new Ast.Statement.Declaration(name, value);
+
     }
 
     /**
