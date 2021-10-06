@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
-import static java.util.Collections.emptyList;
-
 /**
  * The parser takes the sequence of tokens emitted by the lexer and turns that
  * into a structured representation of the program, called the Abstract Syntax
@@ -175,19 +173,30 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Statement parseStatement() throws ParseException {
+        Ast.Statement stmnt = null;
 
        if (peek("LET")){
-           return parseDeclarationStatement();
+           stmnt = parseDeclarationStatement();
        }
 
-       Ast.Expression expr = parseExpression();
+       else {
+           Ast.Expression expr = parseExpression();
+           if (peek("=")) {
+               match("=");
+               Ast.Expression expr1 = parseExpression();
+               stmnt = new Ast.Statement.Assignment(expr,expr1);
+           }
+           else {
+               stmnt = new Ast.Statement.Expression(expr);
+           }
+       }
 
-       if ((tokens.get(-1).getLiteral().equals(";"))){
+       if (!match(";")){//parse expression should stop before ;
            throw new ParseException("Expected semicolon in Statement.",-1);
            //TODO: handle actual character index instead of -1
        }
 
-       return new Ast.Statement.Expression(expr);
+       return stmnt;
     }
 
     /**
@@ -400,97 +409,96 @@ public final class Parser {
      * not strictly necessary.
      */
     public Ast.Expression parsePrimaryExpression() throws ParseException {
+        Ast.Expression expr = null;
 
-        if (peek(Token.Type.INTEGER)) {
+        if (peek("NIL")){
+            expr = new Ast.Expression.Literal(null);
+        } else if (peek("TRUE")){
+            expr = new Ast.Expression.Literal(Boolean.TRUE);
+        } else if (peek("FALSE")){
+            expr = new Ast.Expression.Literal(Boolean.FALSE);
+        }else if (peek(Token.Type.INTEGER)){//INTEGER
             match(Token.Type.INTEGER);
-            BigInteger temp = new BigInteger(tokens.get(-1).getLiteral());
-            return new Ast.Expression.Literal(temp);
-        }
-        else if (peek(Token.Type.STRING)) {
-            match(Token.Type.STRING);
-            String temp = tokens.get(-1).getLiteral();
-            temp=temp.replace("\"","");
-            temp=temp.replace("\\n","\n");
-            return new Ast.Expression.Literal(temp);
-        }
-        else if (peek(Token.Type.CHARACTER)) {
-            match(Token.Type.CHARACTER);
-            String temp = tokens.get(-1).getLiteral();
-            temp =temp.replace("'","");
-            //temp= temp.substring(1,temp.length()-1);
-            Character tempChar = temp.charAt(0);
-            return new Ast.Expression.Literal(tempChar);
-        }
-        else if (peek(Token.Type.DECIMAL)) {
+            BigInteger nextInt = new BigInteger(tokens.get(-1).getLiteral());
+            expr = new Ast.Expression.Literal(nextInt);
+        }else if (peek(Token.Type.DECIMAL)){
             match(Token.Type.DECIMAL);
-            return new Ast.Expression.Literal(new BigDecimal(tokens.get(-1).getLiteral()));
-        }
+            BigDecimal nextdec = new BigDecimal(tokens.get(-1).getLiteral());
+            expr = new Ast.Expression.Literal(nextdec);
+        }else if (peek(Token.Type.CHARACTER)){
+            match(Token.Type.CHARACTER);
+            String toNoQuotes = tokens.get(-1).getLiteral();
+            toNoQuotes = toNoQuotes.replace("\'","");
+            toNoQuotes = toNoQuotes.replace("\\b","\b");//replacement of escape characters
+            toNoQuotes = toNoQuotes.replace("\\n","\n");
+            toNoQuotes = toNoQuotes.replace("\\r","\r");
+            toNoQuotes = toNoQuotes.replace("\\t","\t");
 
-        else if (peek((Token.Type.IDENTIFIER))) {
+            Character tempChar = toNoQuotes.charAt(0);
+
+            expr = new Ast.Expression.Literal(tempChar);
+        }else if (peek(Token.Type.STRING)){
+            match(Token.Type.STRING);
+            String toNoQuotes = tokens.get(-1).getLiteral();
+            toNoQuotes = toNoQuotes.replace("\"","");
+            toNoQuotes = toNoQuotes.replace("\\b","\b");//replacement of escape characters
+            toNoQuotes = toNoQuotes.replace("\\n","\n");
+            toNoQuotes = toNoQuotes.replace("\\r","\r");
+            toNoQuotes = toNoQuotes.replace("\\t","\t");
+
+            expr = new Ast.Expression.Literal(toNoQuotes);
+        }
+        //group,
+        else if(peek("(")){
+            match("(");
+            Ast.Expression expr1 = parseExpression();
+
+            expr = new Ast.Expression.Group(expr1);
+
+            if (!match(")")){
+                throw new ParseException("Expected closing parentheses 1",-1);
+                //TODO: specific character instead of last token
+            }
+        }
+        // function, access
+        else if (peek(Token.Type.IDENTIFIER)){
             match(Token.Type.IDENTIFIER);
-            String temp = tokens.get(-1).getLiteral();
-            if (Objects.equals(temp, "NIL") || Objects.equals(temp, "TRUE") || Objects.equals(temp, "FALSE")) {
-                if (temp.equals("TRUE"))
-                    return new Ast.Expression.Literal(Boolean.TRUE);
-                else if (temp.equals("FALSE"))
-                    return new Ast.Expression.Literal(Boolean.FALSE);
-                else
-                    return new Ast.Expression.Literal(null);
-            }
-            else {
-                if (tokens.has(0)) {
-                    if (tokens.get(0).getLiteral().matches("\\(")) {
-                        match(Token.Type.OPERATOR);
-                        if (tokens.get(0).getLiteral().matches("\\)")) {
-                            return new Ast.Expression.Function(temp, Arrays.asList());
-                        }
-                        List<Ast.Expression> tempList= new ArrayList<>();
-                        while (tokens.has(0)) {
-                            tempList.add(parsePrimaryExpression());
-                            match(Token.Type.OPERATOR);
-                        }
-                        return new Ast.Expression.Function(temp, tempList);
-                    }
-                    else if (tokens.get(0).getLiteral().matches("\\[")) {
-                        match(Token.Type.OPERATOR);
-                        return new Ast.Expression.Access(Optional.of(parsePrimaryExpression()),temp);
-                    }
-                    else if (tokens.get(0).getLiteral().matches("=")) {
-                        match(Token.Type.OPERATOR);
-                        return new Ast.Expression.Access(Optional.empty(),temp);
-                    }
+            String name = tokens.get(-1).getLiteral();
+            List<Ast.Expression> argumentList = new ArrayList<>();
+
+            if (peek("(")){
+                match("(");
+
+                if(!peek(")")) {
+                    argumentList.add(parseExpression());
+                }
+                // while loop for multiple arguments
+                while(peek(",")){
+                    match(",");
+                    argumentList.add(parseExpression());
                 }
 
-                return new Ast.Expression.Access(Optional.empty(),temp);
+                expr = new Ast.Expression.Function(name,argumentList);
+
+                if (!match(")")){
+                    throw new ParseException("Expected closing parenthesis",-1);
+                    //TODO: specific character of error instead of last token
+                }
+
             }
+            else if (peek("[")){
+                match("[");
+
+                expr = new Ast.Expression.Access(Optional.of(parseExpression()),name);
+                if (!match("]")){
+                    throw new ParseException("Expected closing bracket",-1);
+                    //TODO: specific character of error instead of last token
+                }
+            }
+            else expr = new Ast.Expression.Access(Optional.empty(),name);
 
         }
-        else if (peek(Token.Type.OPERATOR)) {
-            match(Token.Type.OPERATOR);
-            if (tokens.has(0)) {
-                if (tokens.get(-1).getLiteral().matches("\\(")) {
-                    return new Ast.Expression.Group(parseExpression());
-                /*
-                int i=0;
-                while (true) {
-                    if (tokens.get(i).getLiteral().matches("\\)")) {
-                        return new Ast.Expression.Binary(tokens.get(i).getLiteral(),parsePrimaryExpression(),parsePrimaryExpression());
-                    }
-                    if (i==100) {
-                        break;
-                    }
-                    i++;
-                }
-                 */
-
-                }
-            }
-            else {
-                return parsePrimaryExpression();//?? wtf
-            }
-        }
-
-        return new Ast.Expression.Literal("idontknowwhattoputhere");
+        return expr;
     }
 
     /**
