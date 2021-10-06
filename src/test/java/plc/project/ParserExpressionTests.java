@@ -38,6 +38,7 @@ final class ParserExpressionTests {
                         ),
                         new Ast.Statement.Expression(new Ast.Expression.Function("name", Arrays.asList()))
                 )
+
         );
     }
 
@@ -62,6 +63,7 @@ final class ParserExpressionTests {
                                 new Ast.Expression.Access(Optional.empty(), "value")
                         )
                 )
+
         );
     }
 

@@ -46,13 +46,26 @@ public final class Parser {
      * next tokens start a field, aka {@code LET}.
      */
     public Ast.Global parseGlobal() throws ParseException {
+        Ast.Global global = null;
+
         if (peek("LIST")){
-            return parseList();
+            global = parseList();
         }else if (peek("VAR")){
-            return parseMutable();
+            global = parseMutable();
         }else if (peek("VAL")){
-            return parseImmutable();
-        }else throw new ParseException("stopped in parse Global",tokens.get(0).getIndex());
+            global = parseImmutable();
+        }
+
+        if(!match(";")){
+            throw new ParseException("Missing Semicolon",-1);
+            //TODO: token error index to character
+        }
+
+        if(global==null){
+            throw new ParseException("Anything, anything at all",0);
+        }
+
+        return global;
     }
 
     /**
@@ -160,7 +173,11 @@ public final class Parser {
     public List<Ast.Statement> parseBlock() throws ParseException {
         List<Ast.Statement> statements = new ArrayList<>();
 
-        while(!peek("END")){
+        while(peek("LET")||peek("SWITCH")||peek("IF")||
+                peek("WHILE")||peek("RETURN")||peek("NIL")
+                ||peek("TRUE")||peek("FALSE")||peek(Token.Type.INTEGER)
+                ||peek(Token.Type.DECIMAL)||peek(Token.Type.CHARACTER)||peek(Token.Type.STRING)
+                ||peek("(")||peek(Token.Type.IDENTIFIER)){
             statements.add(parseStatement());
         }
 
@@ -191,10 +208,10 @@ public final class Parser {
            }
        }
 
-       if (!match(";")){//parse expression should stop before ;
+       /*if (!match(";")){//parse expression should stop before ;
            throw new ParseException("Expected semicolon in Statement.",-1);
            //TODO: handle actual character index instead of -1
-       }
+       }*///dont need this here, needs to be handled individually
 
        return stmnt;
     }
