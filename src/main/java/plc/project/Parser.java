@@ -173,11 +173,12 @@ public final class Parser {
     public List<Ast.Statement> parseBlock() throws ParseException {
         List<Ast.Statement> statements = new ArrayList<>();
 
-        while(peek("LET")||peek("SWITCH")||peek("IF")||
+        while((peek("LET")||peek("SWITCH")||peek("IF")||
                 peek("WHILE")||peek("RETURN")||peek("NIL")
                 ||peek("TRUE")||peek("FALSE")||peek(Token.Type.INTEGER)
                 ||peek(Token.Type.DECIMAL)||peek(Token.Type.CHARACTER)||peek(Token.Type.STRING)
-                ||peek("(")||peek(Token.Type.IDENTIFIER)){
+                ||peek("(")||peek(Token.Type.IDENTIFIER))){
+            //having trouble with else statement when it gets here, else recognized as identifier
             statements.add(parseStatement());
         }
 
@@ -194,9 +195,15 @@ public final class Parser {
 
        if (peek("LET")){
            stmnt = parseDeclarationStatement();
-       }
-
-       else {
+       }else if (peek("SWITCH")){
+           stmnt = parseSwitchStatement();
+       }else if (peek("IF")){
+           stmnt = parseIfStatement();
+       }else if (peek("WHILE")){
+           stmnt = parseWhileStatement();
+       }else if (peek("RETURN")){
+           stmnt = parseReturnStatement();
+       } else {
            Ast.Expression expr = parseExpression();
            if (peek("=")) {
                match("=");
@@ -250,7 +257,23 @@ public final class Parser {
      * {@code IF}.
      */
     public Ast.Statement.If parseIfStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expression condition;
+        List<Ast.Statement> then = new ArrayList<>();
+        List<Ast.Statement> elseStatements = new ArrayList<>();
+
+        match("IF");
+        condition = parseExpression();
+        match("DO");
+        then = parseBlock();
+
+        if(peek("ELSE")){
+            match("ELSE");
+            elseStatements = parseBlock();
+        }
+
+        match("END");
+
+        return new Ast.Statement.If(condition,then,elseStatements);
     }
 
     /**
@@ -277,7 +300,17 @@ public final class Parser {
      * {@code WHILE}.
      */
     public Ast.Statement.While parseWhileStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expression condition;
+        List<Ast.Statement> statements = new ArrayList<>();
+
+        match("WHILE");
+        condition = parseExpression();
+
+        match("DO");
+        statements = parseBlock();
+        match("END");
+
+        return new Ast.Statement.While(condition,statements);
     }
 
     /**
@@ -286,7 +319,16 @@ public final class Parser {
      * {@code RETURN}.
      */
     public Ast.Statement.Return parseReturnStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expression value;
+
+        match("RETURN");
+        value = parseExpression();
+
+        if (!match(";")){
+            throw new ParseException("Expected Semicolon",-1);//TODO
+        }
+
+        return new Ast.Statement.Return(value);
     }
 
     /**
