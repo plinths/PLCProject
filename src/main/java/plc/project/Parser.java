@@ -108,7 +108,7 @@ public final class Parser {
         if(peek("=")){
             match("=");
             Ast.Expression expr = parseExpression();
-             arg = Optional.of(expr);
+            arg = Optional.of(expr);
         }
 
         return new Ast.Global(name,Boolean.TRUE,arg);
@@ -173,13 +173,20 @@ public final class Parser {
     public List<Ast.Statement> parseBlock() throws ParseException {
         List<Ast.Statement> statements = new ArrayList<>();
 
-        while(peek("LET")||peek("SWITCH")||peek("IF")||
+        while((peek("LET")||peek("SWITCH")||peek("IF")||
                 peek("WHILE")||peek("RETURN")||peek("NIL")
                 ||peek("TRUE")||peek("FALSE")||peek(Token.Type.INTEGER)
                 ||peek(Token.Type.DECIMAL)||peek(Token.Type.CHARACTER)||peek(Token.Type.STRING)
-                ||peek("(")||peek(Token.Type.IDENTIFIER)){
+                ||peek("(")||peek(Token.Type.IDENTIFIER))){
             //having trouble with else statement when it gets here, else recognized as identifier
             statements.add(parseStatement());
+            if(peek(";")) {
+                match(";");
+            }
+            if (peek("END")||peek("ELSE")||peek("DEFAULT")) {
+                break;
+            }
+
         }
 
         return statements;
@@ -191,36 +198,36 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Statement parseStatement() throws ParseException {
-        Ast.Statement stmnt;
+        Ast.Statement stmnt = null;
 
-       if (peek("LET")){
-           stmnt = parseDeclarationStatement();
-       }else if (peek("SWITCH")){
-           stmnt = parseSwitchStatement();
-       }else if (peek("IF")){
-           stmnt = parseIfStatement();
-       }else if (peek("WHILE")){
-           stmnt = parseWhileStatement();
-       }else if (peek("RETURN")){
-           stmnt = parseReturnStatement();
-       } else {
-           Ast.Expression expr = parseExpression();
-           if (peek("=")) {
-               match("=");
-               Ast.Expression expr1 = parseExpression();
-               stmnt = new Ast.Statement.Assignment(expr,expr1);
-           }
-           else {
-               stmnt = new Ast.Statement.Expression(expr);
-           }
-       }
+        if (peek("LET")){
+            stmnt = parseDeclarationStatement();
+        }else if (peek("SWITCH")){
+            stmnt = parseSwitchStatement();
+        }else if (peek("IF")){
+            stmnt = parseIfStatement();
+        }else if (peek("WHILE")){
+            stmnt = parseWhileStatement();
+        }else if (peek("RETURN")){
+            stmnt = parseReturnStatement();
+        } else {
+            Ast.Expression expr = parseExpression();
+            if (peek("=")) {
+                match("=");
+                Ast.Expression expr1 = parseExpression();
+                stmnt = new Ast.Statement.Assignment(expr,expr1);
+            }
+            else {
+                stmnt = new Ast.Statement.Expression(expr);
+            }
+        }
 
        /*if (!match(";")){//parse expression should stop before ;
            throw new ParseException("Expected semicolon in Statement.",-1);
            //TODO: handle actual character index instead of -1
        }*///dont need this here, needs to be handled individually
 
-       return stmnt;
+        return stmnt;
     }
 
     /**
@@ -258,7 +265,7 @@ public final class Parser {
      */
     public Ast.Statement.If parseIfStatement() throws ParseException {
         Ast.Expression condition;
-        List<Ast.Statement> then;
+        List<Ast.Statement> then = new ArrayList<>();
         List<Ast.Statement> elseStatements = new ArrayList<>();
 
         match("IF");
@@ -282,21 +289,27 @@ public final class Parser {
      * {@code SWITCH}.
      */
     public Ast.Statement.Switch parseSwitchStatement() throws ParseException {
-        Ast.Expression condition;
-        List<Ast.Statement.Case> cases = new ArrayList<>();
 
         match("SWITCH");
-        condition = parseExpression();
+        Ast.Expression value = parseExpression();
+        List<Ast.Statement.Case> cases = new ArrayList<>();
 
-        while(!peek("DEFAULT")){
+
+        while(!peek("DEFAULT")) {
+            if (peek("CASE")) {
+                cases.add(parseCaseStatement());
+
+            }
+        }
+        if (peek("DEFAULT")) {
             cases.add(parseCaseStatement());
         }
-        match("DEFAULT");
-        cases.add(new Ast.Statement.Case(Optional.empty(),parseBlock()));
 
-        match("END");
 
-        return new Ast.Statement.Switch(condition, cases);
+        Ast.Statement.Switch tempSwitch = new Ast.Statement.Switch(value, cases);
+        return tempSwitch;
+
+        //TODO
     }
 
     /**
@@ -305,16 +318,20 @@ public final class Parser {
      * default block of a switch statement, aka {@code CASE} or {@code DEFAULT}.
      */
     public Ast.Statement.Case parseCaseStatement() throws ParseException {
-        Optional<Ast.Expression> value;
-        List<Ast.Statement> statements;
+
+
+        if (peek("DEFAULT")) {
+            match("DEFAULT");
+            Ast.Statement.Case tempCase = new Ast.Statement.Case(Optional.empty(),parseBlock());
+            return tempCase;
+        }
 
         match("CASE");
-        value = Optional.of(parseExpression());
-
+        Ast.Expression temp = parseExpression();
         match(":");
-        statements = parseBlock();
+        Ast.Statement.Case tempCase = new Ast.Statement.Case(Optional.of(temp),parseBlock());
+        return tempCase;
 
-        return new Ast.Statement.Case(value,statements);
     }
 
     /**
@@ -324,13 +341,14 @@ public final class Parser {
      */
     public Ast.Statement.While parseWhileStatement() throws ParseException {
         Ast.Expression condition;
-        List<Ast.Statement> statements;
+        List<Ast.Statement> statements = new ArrayList<>();
 
         match("WHILE");
         condition = parseExpression();
 
         match("DO");
         statements = parseBlock();
+
         match("END");
 
         return new Ast.Statement.While(condition,statements);
@@ -515,9 +533,6 @@ public final class Parser {
             toNoQuotes = toNoQuotes.replace("\\n","\n");
             toNoQuotes = toNoQuotes.replace("\\r","\r");
             toNoQuotes = toNoQuotes.replace("\\t","\t");
-            toNoQuotes = toNoQuotes.replace("\\'","\'");
-            toNoQuotes = toNoQuotes.replace("\\","\"");
-            toNoQuotes = toNoQuotes.replace("\\\\","\\");
 
             Character tempChar = toNoQuotes.charAt(0);
 
@@ -530,9 +545,6 @@ public final class Parser {
             toNoQuotes = toNoQuotes.replace("\\n","\n");
             toNoQuotes = toNoQuotes.replace("\\r","\r");
             toNoQuotes = toNoQuotes.replace("\\t","\t");
-            toNoQuotes = toNoQuotes.replace("\\'","\'");
-            toNoQuotes = toNoQuotes.replace("\\","\"");
-            toNoQuotes = toNoQuotes.replace("\\\\","\\");
 
             expr = new Ast.Expression.Literal(toNoQuotes);
         }
