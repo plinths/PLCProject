@@ -191,6 +191,41 @@ final class ParserTests {
         );
     }
 
+    @ParameterizedTest
+    @MethodSource
+    void testSwitchStatement(String test, List<Token> tokens, Ast.Statement.Switch expected) {
+        test(tokens, expected, Parser::parseStatement);
+    }
+
+    private static Stream<Arguments> testSwitchStatement() {
+        return Stream.of(
+                Arguments.of("Switch",
+                        Arrays.asList(
+                                //SWITCH expr1 CASE expr2 : stmt1; DEFAULT stmt2; END
+                                new Token(Token.Type.IDENTIFIER, "SWITCH", 0),
+                                new Token(Token.Type.IDENTIFIER, "expr1", 7),
+                                new Token(Token.Type.IDENTIFIER, "CASE", 13),
+                                new Token(Token.Type.IDENTIFIER, "expr2", 18),
+                                new Token(Token.Type.OPERATOR, ":", 24),
+                                new Token(Token.Type.IDENTIFIER, "stmt1", 26),
+                                new Token(Token.Type.OPERATOR, ";", 31),
+                                new Token(Token.Type.IDENTIFIER, "DEFAULT", 33),
+                                new Token(Token.Type.IDENTIFIER, "stmt2", 41),
+                                new Token(Token.Type.OPERATOR, ";", 46),
+                                new Token(Token.Type.IDENTIFIER, "END", 48)
+                        ),
+                        new Ast.Statement.Switch(
+                                new Ast.Expression.Access(Optional.empty(), "expr1"),
+                                Arrays.asList(new Ast.Statement.Case(Optional.of(new Ast.Expression.Access(Optional.empty(),"expr2")),Arrays.asList(new Ast.Statement.Expression(new Ast.Expression.Access(Optional.empty(),"stmt1")))),
+                                        new Ast.Statement.Case(Optional.empty(),Arrays.asList(new Ast.Statement.Expression(new Ast.Expression.Access(Optional.empty(),"stmt2"))))
+
+                                        )
+                        )
+                )
+        );
+    }
+
+
     /*
 
     @ParameterizedTest
