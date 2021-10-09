@@ -206,6 +206,9 @@ public final class Parser {
             stmnt = parseSwitchStatement();
         }else if (peek("IF")){
             stmnt = parseIfStatement();
+            if(!peek("END")) {
+                throw new ParseException("Expected END", tokens.index);
+            }
         }else if (peek("WHILE")){
             stmnt = parseWhileStatement();
         }else if (peek("RETURN")){
@@ -216,9 +219,15 @@ public final class Parser {
                 match("=");
                 Ast.Expression expr1 = parseExpression();
                 stmnt = new Ast.Statement.Assignment(expr,expr1);
+                if (!peek(";")) {
+                    throw new ParseException("Expected ;", tokens.index);
+                }
             }
             else {
                 stmnt = new Ast.Statement.Expression(expr);
+                if (!peek(";")) {
+                    throw new ParseException("Expected ;", tokens.index);
+                }
             }
         }
 
@@ -270,7 +279,12 @@ public final class Parser {
 
         match("IF");
         condition = parseExpression();
-        match("DO");
+        if (peek("DO")) {
+            match("DO");
+        }
+        else {
+            throw new ParseException("Expected DO", tokens.index);
+        }
         then = parseBlock();
 
         if(peek("ELSE")){
@@ -278,7 +292,7 @@ public final class Parser {
             elseStatements = parseBlock();
         }
 
-        match("END");
+        //match("END");
 
         return new Ast.Statement.If(condition,then,elseStatements);
     }
@@ -366,7 +380,11 @@ public final class Parser {
         value = parseExpression();
 
         if (!match(";")){
-            throw new ParseException("Expected Semicolon",-1);//TODO
+            throw new ParseException("Expected Semicolon", tokens.index);//TODO
+        }
+
+        if (value==null) {
+            throw new ParseException("Missing value",tokens.index);
         }
 
         return new Ast.Statement.Return(value);
