@@ -75,9 +75,23 @@ public final class Parser {
     public Ast.Global parseList() throws ParseException {
         List<Ast.Expression> elements = new ArrayList<>();//list to construct list expression
 
-        match("LIST", Token.Type.IDENTIFIER);
+        match("LIST");
+        if( peek(Token.Type.IDENTIFIER)) {
+            match(Token.Type.IDENTIFIER);
+        }
         String name = tokens.get(-1).getLiteral();
-        match("=","[");//peek first for error checking?
+        if (peek("=")) {
+            match("=");
+        }
+        else {
+            throw new ParseException("Missing =",tokens.index);
+        }
+        if (peek("[")) {
+            match("[");//peek first for error checking?
+        }
+        else {
+            throw new ParseException("Missing [", tokens.index);
+        }
         elements.add(parseExpression());
 
         //while loop to add rest of expressions (',' expression)*
@@ -86,12 +100,17 @@ public final class Parser {
             elements.add(parseExpression());
         }
 
-        match("]");
+        if (peek("]")) {
+            match("]");
+        }
+        else {
+            throw new ParseException("Missing ]", tokens.index);
+        }
 
         Ast.Expression.PlcList plc = new Ast.Expression.PlcList(elements);
         Optional<Ast.Expression> list = Optional.of(plc);
 
-        return new Ast.Global(name,Boolean.FALSE,list);//global to return with elements in constructor
+        return new Ast.Global(name,Boolean.TRUE,list);//global to return with elements in constructor
     }
 
     /**
@@ -138,14 +157,25 @@ public final class Parser {
      */
     public Ast.Function parseFunction() throws ParseException {
         match("FUN");
-        match(Token.Type.IDENTIFIER);
+        if (peek(Token.Type.IDENTIFIER)) {
+            match(Token.Type.IDENTIFIER);
+        }
+        else {
+            throw new ParseException("Missing identifier", tokens.index);
+        }
 
         String name = tokens.get(-1).getLiteral();
 
         List<String> arguments = new ArrayList<>();
         List<Ast.Statement> statements;
 
-        match("(");
+        if (peek("(")) {
+            match("(");
+        }
+        else {
+            throw new ParseException("Missing (",tokens.index);
+        }
+
 
         if (peek(Token.Type.IDENTIFIER)){
             match(Token.Type.IDENTIFIER);
@@ -158,10 +188,27 @@ public final class Parser {
             }
         }
 
-        match(")");
-        match("DO");
+
+        if (match(")")) {
+
+        }
+        else {
+            throw new ParseException("Missing )", tokens.index);
+        }
+        if (match("DO")) {
+
+        }
+        else {
+            throw new ParseException("Missing DO", tokens.index);
+        }
         statements = parseBlock();
-        match("END");
+
+        if (match("END")) {
+
+        }
+        else {
+            throw new ParseException("Missing END", tokens.index);
+        }
 
         return new Ast.Function(name,arguments,statements);
     }
@@ -578,7 +625,7 @@ public final class Parser {
             expr = new Ast.Expression.Group(expr1);
 
             if (!match(")")){
-                throw new ParseException("Expected closing parentheses 1",-1);
+                throw new ParseException("Expected closing parentheses 1", tokens.index);
                 //TODO: specific character instead of last token
             }
         }
