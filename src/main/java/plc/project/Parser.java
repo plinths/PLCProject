@@ -179,13 +179,14 @@ public final class Parser {
                 ||peek(Token.Type.DECIMAL)||peek(Token.Type.CHARACTER)||peek(Token.Type.STRING)
                 ||peek("(")||peek(Token.Type.IDENTIFIER))){
             //having trouble with else statement when it gets here, else recognized as identifier
+            if (peek("END")||peek("ELSE")||peek("DEFAULT")) {
+                break;
+            }
             statements.add(parseStatement());
             if(peek(";")) {
                 match(";");
             }
-            if (peek("END")||peek("ELSE")||peek("DEFAULT")) {
-                break;
-            }
+
 
         }
 
@@ -309,11 +310,9 @@ public final class Parser {
         List<Ast.Statement.Case> cases = new ArrayList<>();
 
 
-        while(!peek("DEFAULT")) {
-            if (peek("CASE")) {
-                cases.add(parseCaseStatement());
+        while(peek("CASE")) {
+            cases.add(parseCaseStatement());
 
-            }
         }
         if (peek("DEFAULT")) {
             cases.add(parseCaseStatement());
@@ -363,7 +362,12 @@ public final class Parser {
         match("DO");
         statements = parseBlock();
 
-        match("END");
+        if (peek("END")) {
+            match("END");
+        }
+        else {
+            throw new ParseException("Missing END", tokens.index);
+        }
 
         return new Ast.Statement.While(condition,statements);
     }
@@ -599,7 +603,7 @@ public final class Parser {
                 expr = new Ast.Expression.Function(name,argumentList);
 
                 if (!match(")")){
-                    throw new ParseException("Expected closing parenthesis",-1);
+                    throw new ParseException("Expected closing parenthesis", tokens.index);
                     //TODO: specific character of error instead of last token
                 }
 
@@ -609,12 +613,15 @@ public final class Parser {
 
                 expr = new Ast.Expression.Access(Optional.of(parseExpression()),name);
                 if (!match("]")){
-                    throw new ParseException("Expected closing bracket",-1);
+                    throw new ParseException("Expected closing bracket", tokens.index);
                     //TODO: specific character of error instead of last token
                 }
             }
             else expr = new Ast.Expression.Access(Optional.empty(),name);
 
+        }
+        if (expr==null) {
+            throw new ParseException("Invalid Expression", tokens.index);
         }
         return expr;
     }
