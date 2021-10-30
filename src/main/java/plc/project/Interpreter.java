@@ -187,13 +187,20 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         scope = new Scope(scope);
 
         int caseNum = ast.getCases().size();
+        Object var = null;
+        if (ast.getCondition() instanceof Ast.Expression.Access) {
+            Object val = ((Ast.Expression.Access) ast.getCondition()).getName();
+            var = scope.lookupVariable(val.toString()).getValue().getValue();
+
+        }
 
         for (int i = 0; i < caseNum; i++){//check if condition is equivalent to case
-            if (ast.getCondition().equals(ast.getCases().get(i))){
+            Ast.Expression temp = ast.getCases().get(i).getValue().get();
+            if (var.equals(visit(temp).getValue())){
 
                 visit(ast.getCases().get(i));
 
-                
+                //throw new ParseException(ast.getCases().get(i).toString(),0);
                 break;
             }
             if (i==(caseNum-1)){//default case
@@ -201,6 +208,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 visit(ast.getCases().get(i));
 
             }
+
         }
 
         return Environment.NIL;
