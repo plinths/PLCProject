@@ -104,11 +104,11 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         if ( ast.getValue().isPresent() ){
             scope.defineVariable( ast.getName(),
                     true,
-                            visit( ast.getValue().get()));
+                    visit( ast.getValue().get()));
         } else {
             scope.defineVariable( ast.getName(),
                     true,
-                            Environment.NIL );
+                    Environment.NIL );
         }
 
         return Environment.NIL;
@@ -129,13 +129,30 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             throw new UnsupportedOperationException("attempt to assign immutable variable");
         }
 
+
+
+
         //set variable in current scope
-        if (var.getValue().getValue() instanceof Ast.Expression.PlcList) {//if plc list
 
-            List oldList = ((Ast.Expression.PlcList) var.getValue().getValue()).getValues();
-            //int offset = ((Ast.Expression.Access) ast.getReceiver()).getOffset();
+        //I wrote this and i still don't understand how it works but it passes the test
+        if (((Ast.Expression.Access) ast.getReceiver()).getOffset().isPresent()) {//if plc list
 
-            //var.setValue();
+            BigInteger offset = requireType(BigInteger.class, visit( ((Ast.Expression.Access) ast.getReceiver()).getOffset().get() ) );
+
+            Object tempList = var.getValue().getValue();
+            List tempTempList = (List)tempList;
+
+            int i=0;
+            for (int j =0;j<offset.intValue();j++)
+            {
+                i++;
+            }
+
+            //use offset variable to return appropriate list value
+            tempTempList.set(i,visit(ast.getValue()).getValue());
+            Environment.PlcObject newList = Environment.create(tempTempList);
+            var.setValue(newList);
+
         }else{
             var.setValue(visit(ast.getValue()));
         }
@@ -232,7 +249,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             result = Environment.NIL;
         }else result = Environment.create(ast.getLiteral());
 
-         return result;
+        return result;
     }
 
     @Override
@@ -308,7 +325,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 }else result = Environment.create(Boolean.TRUE);
                 break;
             case "==":
-                 boolean Res;
+                boolean Res;
                 Res = visit(ast.getLeft()).equals(visit(ast.getRight()));
 
                 result = Res ? Environment.create(Boolean.TRUE) : Environment.create(Boolean.FALSE);
@@ -418,9 +435,20 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
         if ( ast.getOffset().isPresent() ){//if object contains optional access expression
             BigInteger offset = requireType(BigInteger.class, visit( ast.getOffset().get() ) );
+            Environment.Variable temp = scope.lookupVariable(ast.getName());
+            Object tempList = temp.getValue().getValue();
+            List tempTempList = (List)tempList;
+            //List temtem = visit(temp.getValue().getValue());
+            int i=0;
+
+
+            for (int j =0;j<offset.intValue();j++)
+            {
+                i++;
+            }
 
             //use offset variable to return appropriate list value
-            result = Environment.NIL;//TODO
+            result = Environment.create(tempTempList.get(i));//TODO
 
         }else{//return variable
 
