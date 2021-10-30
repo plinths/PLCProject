@@ -193,6 +193,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 visit(ast.getCases().get(i));
 
+                
                 break;
             }
             if (i==(caseNum-1)){//default case
@@ -221,17 +222,33 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Statement.While ast) {
+
+        //if (ast.getCondition() instanceof Ast.Expression.Binary) {
+            //throw new ParseException(getScope().toString(),0);
+        //}
+
+
+
         while ( requireType( Boolean.class, visit( ast.getCondition()))) {
             try{
                 scope = new Scope(scope);
 
                 ast.getStatements().forEach(this::visit);
 
+
             }finally{
                 scope = scope.getParent();
             }
         }
+
+
+
+
+
+
         return Environment.NIL;
+
+
     }
 
     @Override
@@ -302,9 +319,25 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                     throw new RuntimeException("Left hand side and right hand side of binary expression are of different types.");
                 }
 
-                Comparable LHS = requireType(Comparable.class, visit(ast.getLeft()));
-                Comparable RHS = requireType(Comparable.class, visit(ast.getRight()));
-                int compareResult = LHS.compareTo(RHS);
+                Comparable LHS;
+                int compareResult=0;
+                /*
+                if ((ast.getLeft() instanceof Ast.Expression.Access) || (ast.getRight() instanceof Ast.Expression.Access)) {
+
+
+                    LHS = new BigInteger(visit(ast.getLeft()).getValue().toString());
+                    Comparable RHS = requireType(Comparable.class, visit(ast.getRight()));
+                    compareResult = LHS.compareTo(RHS);
+
+                }
+
+                 */
+                //else {
+                    LHS = requireType(Comparable.class, visit(ast.getLeft()));
+                    Comparable RHS = requireType(Comparable.class, visit(ast.getRight()));
+                    compareResult = LHS.compareTo(RHS);
+                //}
+
 
                 if (compareResult >= 0){
                     result = Environment.create(Boolean.FALSE);
@@ -315,6 +348,8 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
                 if (visit(ast.getLeft()).getClass() != visit(ast.getRight()).getClass()){//not of same type
                     throw new RuntimeException("Left hand side and right hand side of binary expression are of different types.");
                 }
+
+
 
                 Comparable LHS1 = requireType(Comparable.class, visit(ast.getLeft()));
                 Comparable RHS1 = requireType(Comparable.class, visit(ast.getRight()));
@@ -342,6 +377,12 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 Environment.PlcObject lhs = visit(ast.getLeft());
                 Environment.PlcObject rhs = visit(ast.getRight());
+                /*
+                if (true) {
+                    throw new ParseException(visit(ast.getLeft())..toString(),0);
+                }
+
+                 */
 
                 if (lhs.getValue() instanceof java.lang.String || rhs.getValue() instanceof java.lang.String){//concatenation
 
@@ -452,7 +493,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
         }else{//return variable
 
-            String val = scope.lookupVariable(ast.getName()).getValue().getValue().toString();
+            Object val = scope.lookupVariable(ast.getName()).getValue().getValue();
 
             result = Environment.create(val);
 
