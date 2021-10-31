@@ -64,14 +64,17 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Function ast) {
+        //throw new ParseException(,0);
 
         scope = new Scope(scope);//new scope remember to restore when finished
 
         scope.defineFunction(ast.getName(),ast.getParameters().size(),args -> {
+
             List<String> params = ast.getParameters();
 
             for (int i = 0; i < params.size(); i++) {
-                scope.defineVariable(params.get(i), true, null);
+                scope.defineVariable(params.get(i), true, args.get(i));
+                //throw new ParseException(scope.getParent().toString(),0);
             }
 
             List<Ast.Statement> stmnts = ast.getStatements();
@@ -79,16 +82,24 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             for (int i = 0; i < stmnts.size(); i++) {
                 try {
                     visit(stmnts.get(i));
-                }catch(Interpreter.Return e){
+
+                }
+                catch(Interpreter.Return e){
                     scope = scope.getParent();
                     return e.value;
                 }
             }
             scope = scope.getParent();
             return Environment.NIL;
+
+
         });
 
+
+
         return Environment.NIL;
+
+
     }
 
     @Override
