@@ -132,10 +132,7 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
         //set variable in current scope
         if (var.getValue().getValue() instanceof Ast.Expression.PlcList) {//if plc list
 
-            List oldList = ((Ast.Expression.PlcList) var.getValue().getValue()).getValues();
-            //int offset = ((Ast.Expression.Access) ast.getReceiver()).getOffset();
 
-            //var.setValue();
         }else{
             var.setValue(visit(ast.getValue()));
         }
@@ -420,7 +417,8 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
             BigInteger offset = requireType(BigInteger.class, visit( ast.getOffset().get() ) );
 
             //use offset variable to return appropriate list value
-            result = Environment.NIL;//TODO
+            List<Ast.Expression> list = (List<Ast.Expression>) scope.lookupVariable(ast.getName()).getValue().getValue();
+            return Environment.create(list.get(offset.intValue()));
 
         }else{//return variable
 
