@@ -138,7 +138,51 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Binary ast) {
-        throw new UnsupportedOperationException();  // TODO
+
+        String operator = ast.getOperator();
+
+        visit(ast.getLeft());
+        visit(ast.getRight());
+
+        switch(operator){
+            case "&&":
+            case "||":
+                requireAssignable(ast.getLeft().getType(),ast.getRight().getType());
+                ast.setType(Environment.Type.BOOLEAN);
+                break;
+            case "<":
+            case ">":
+            case "==":
+            case "!=":
+                if (!(ast.getLeft().getType().equals(Environment.Type.COMPARABLE))  || !(ast.getRight().getType().equals(Environment.Type.COMPARABLE)) ){
+                    throw new RuntimeException("Both operands must be of type comparable");
+                }
+                requireAssignable(ast.getLeft().getType(),ast.getRight().getType());
+                ast.setType(Environment.Type.BOOLEAN);
+                break;
+            case "+":
+                if (ast.getLeft().getType().equals(Environment.Type.STRING) || ast.getRight().getType().equals(Environment.Type.STRING)){
+                    ast.setType(Environment.Type.STRING);
+                    break;
+                }else if (ast.getLeft().getType().equals(Environment.Type.DECIMAL) || ast.getLeft().getType().equals(Environment.Type.INTEGER)){
+                    requireAssignable(ast.getLeft().getType(),ast.getRight().getType());
+                    ast.setType(ast.getLeft().getType());
+                }
+                break;
+            case "-":
+            case "*":
+            case "/":
+                if (ast.getLeft().getType().equals(Environment.Type.DECIMAL) || ast.getLeft().getType().equals(Environment.Type.INTEGER)) {
+                    requireAssignable(ast.getLeft().getType(), ast.getRight().getType());
+                    ast.setType(ast.getLeft().getType());
+                }
+            case "^":
+                if ((ast.getLeft().getType().equals(Environment.Type.INTEGER) || ast.getLeft().getType().equals(Environment.Type.DECIMAL) && ast.getRight().getType().equals(Environment.Type.INTEGER))){
+                    ast.setType(ast.getLeft().getType());
+                }else throw new RuntimeException("^");
+                break;
+        }
+        return null;
     }
 
     @Override
@@ -161,7 +205,25 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Function ast) {
-        throw new UnsupportedOperationException();//TODO
+
+        //Environment.Function func = new Environment.Function(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getArguments().size()).getParameterTypes(),ast.getType(),);
+
+        //ast.setFunction();
+
+        //checks that provided arguments are assignable to parameter types
+        List<Environment.Type> paramTypeList = scope.lookupFunction(ast.getName(),ast.getArguments().size()).getParameterTypes();
+        List<Ast.Expression> providedParams = ast.getArguments();
+
+        if (paramTypeList.size()!=providedParams.size()){
+            throw new RuntimeException("wrong number of parameters");
+        }
+
+        for (int i = 0; i < paramTypeList.size(); i++){
+            requireAssignable(paramTypeList.get(i),providedParams.get(i).getType());
+        }
+
+
+        return null;
     }
 
     @Override
