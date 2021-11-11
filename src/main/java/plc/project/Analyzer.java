@@ -150,10 +150,11 @@ public final class Analyzer implements Ast.Visitor<Void> {
             requireAssignable(Environment.Type.INTEGER,ast.getOffset().get().getType());
 
         }else{
+            Environment.PlcObject obj = new Environment.PlcObject(scope, scope.lookupVariable(ast.getName()));
+            var = new Environment.Variable(ast.getName(),ast.getName(),scope.lookupVariable(ast.getName()).getType(),scope.lookupVariable(ast.getName()).getMutable(),obj);
+            ast.setVariable(var);
 
         }
-
-
 
         return null;
     }
