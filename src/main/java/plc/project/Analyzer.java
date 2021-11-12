@@ -27,7 +27,18 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Source ast) {
-        throw new UnsupportedOperationException();  // TODO
+        for (Ast.Global glob : ast.getGlobals()){
+            visit(glob);
+        }
+        for (Ast.Function func : ast.getFunctions()){
+            visit( func );
+        }
+
+        if (!(scope.lookupFunction("main",0).getReturnType().equals (Environment.Type.INTEGER))) {
+            throw new RuntimeException("the main function does not have an Integer return type");
+        }
+
+        return null;
     }
 
     @Override
@@ -42,7 +53,12 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Expression ast) {
-        throw new UnsupportedOperationException();  // TODO
+
+        if (!(ast.getExpression() instanceof Ast.Expression.Function)){
+            throw new RuntimeException("expression not an ast.expression.function");
+        }
+
+        return null;
     }
 
     @Override
@@ -52,7 +68,13 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Assignment ast) {
-        throw new UnsupportedOperationException();  // TODO
+
+        if (!(ast.getReceiver() instanceof Ast.Expression.Access)){
+            throw new RuntimeException("receiver is not an access expression");
+        }
+
+
+        return null;
     }
 
     @Override
@@ -62,12 +84,31 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Switch ast) {
-        throw new UnsupportedOperationException();  // TODO
+
+
+
+
+            for (Ast.Statement stmt : ast.getCases() ) {
+                scope = new Scope(scope);
+                visit( stmt );
+                scope  = scope.getParent();
+            }
+        return null;
     }
 
     @Override
     public Void visit(Ast.Statement.Case ast) {
-        throw new UnsupportedOperationException();  // TODO
+
+        try{
+            scope = new Scope(scope);
+            for (Ast.Statement stmt : ast.getStatements() ) {
+                visit( stmt );
+            }
+        } finally {
+            scope = scope.getParent();
+        }
+
+        return null;
     }
 
     @Override
