@@ -43,7 +43,17 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Global ast) {
-        throw new UnsupportedOperationException();  // TODO
+
+        if (ast.getValue().isPresent()){
+            //visit(ast.getValue().get());
+
+           // requireAssignable(ast.getValue().get().getType(), ast.getVariable().getType());
+
+            //scope.defineVariable(ast.getName(),ast.getName(),ast.getVariable().getType(),Boolean.TRUE,Environment.NIL);
+        }
+
+
+        return null;
     }
 
     @Override
@@ -63,30 +73,68 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Declaration ast) {
-        throw new UnsupportedOperationException();  // TODO
-    }
 
-    @Override
-    public Void visit(Ast.Statement.Assignment ast) {
+        Environment.Type type;
 
-        if (!(ast.getReceiver() instanceof Ast.Expression.Access)){
-            throw new RuntimeException("receiver is not an access expression");
+
+
+        if (ast.getValue().isPresent()) {
+            visit(ast.getValue().get());
         }
+
+
+        if (ast.getTypeName().isPresent()){
+            type = ast.getVariable().getType();
+        }else type = ast.getValue().get().getType();
+
+        //scope.defineVariable(ast.getName(), ast.getName(),type,Boolean.FALSE,ast.getVariable().getValue());
+
 
 
         return null;
     }
 
     @Override
+    public Void visit(Ast.Statement.Assignment ast) {
+
+        visit(ast.getReceiver());
+        visit(ast.getValue());
+
+        if (!(ast.getReceiver() instanceof Ast.Expression.Access)){
+            throw new RuntimeException("receiver is not an access expression");
+        }
+
+        requireAssignable( ast.getValue().getType(), ast.getReceiver().getType());
+
+        return null;
+    }
+
+    @Override
     public Void visit(Ast.Statement.If ast) {
-        throw new UnsupportedOperationException();  // TODO
+        visit ( ast.getCondition() );
+        if (!(ast.getCondition().getType().equals(Environment.Type.BOOLEAN)) ||
+                ( ast.getThenStatements().size()==0 )//empty then Statements
+        ){
+            throw new RuntimeException("condition not of type boolean");
+        }
+
+        scope = new Scope(scope);//then statements
+        for ( Ast.Statement stmt : ast.getThenStatements() ){
+            visit(stmt);
+        }
+        scope = scope.getParent();
+
+        scope = new Scope(scope);//else statements
+        for ( Ast.Statement stmt : ast.getElseStatements() ){
+            visit(stmt);
+        }
+        scope = scope.getParent();
+
+        return null;
     }
 
     @Override
     public Void visit(Ast.Statement.Switch ast) {
-
-
-
 
             for (Ast.Statement stmt : ast.getCases() ) {
                 scope = new Scope(scope);
@@ -128,7 +176,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Return ast) {
-        throw new UnsupportedOperationException();  // TODO
+        throw new UnsupportedOperationException();//TODO
     }
 
     @Override
@@ -254,10 +302,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Expression.Function ast) {
 
-        //Environment.Function func = new Environment.Function(ast.getName(), ast.getName(),scope.lookupFunction(ast.getName(),ast.getArguments().size()).getParameterTypes(),ast.getType(),);
-
-        //ast.setFunction();
-
         //checks that provided arguments are assignable to parameter types
         List<Environment.Type> paramTypeList = scope.lookupFunction(ast.getName(),ast.getArguments().size()).getParameterTypes();
         List<Ast.Expression> providedParams = ast.getArguments();
@@ -270,6 +314,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
             requireAssignable(paramTypeList.get(i),providedParams.get(i).getType());
         }
 
+        ast.setFunction(scope.lookupFunction(ast.getName(),ast.getArguments().size()));
 
         return null;
     }
