@@ -3,6 +3,7 @@ package plc.project;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,8 +73,24 @@ public final class Analyzer implements Ast.Visitor<Void> {
             type = Environment.Type.NIL;
         }
 
-        scope.defineFunction(ast.getName(),ast.getName(),ast.getFunction().getParameterTypes(),type , args->Environment.NIL );
+        List<Environment.Type> types = new ArrayList<Environment.Type>();
+        for(int i = 0; i < ast.getParameterTypeNames().size();i++){
+            types.add(Environment.getType(ast.getParameterTypeNames().get(i)));
+        }
+
+        scope.defineFunction(ast.getName(),ast.getName(),types,type , args->Environment.NIL );
         ast.setFunction(scope.lookupFunction(ast.getName(),ast.getParameters().size()));
+
+        scope = new Scope(scope);
+
+        scope.defineVariable("returnType","returnType",type,Boolean.FALSE,
+                null);
+
+        for (Ast.Statement stmt : ast.getStatements()) {
+            visit(stmt);
+        }
+
+        scope = scope.getParent();
 
 
 
@@ -167,7 +184,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
                 throw new RuntimeException("default case should not have value" + " cases size: "+ast.getCases().size() + " case num: " + i);
             }
 
-
             scope = scope.getParent();
         }
 
@@ -206,7 +222,10 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Return ast) {
-        throw new UnsupportedOperationException();//TODO
+        visit(ast.getValue());
+        requireAssignable(ast.getValue().getType(),scope.lookupVariable("returnType").getType());
+
+        return null;
     }
 
     @Override
