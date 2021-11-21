@@ -28,7 +28,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Source ast) {
         for (Ast.Global glob : ast.getGlobals()){
-            visit(glob);
+            visit( glob );
         }
         for (Ast.Function func : ast.getFunctions()){
             visit( func );
@@ -43,22 +43,41 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Global ast) {
-
         if (ast.getValue().isPresent()){
-            //visit(ast.getValue().get());
-
-           // requireAssignable(ast.getValue().get().getType(), ast.getVariable().getType());
-
-            //scope.defineVariable(ast.getName(),ast.getName(),ast.getVariable().getType(),Boolean.TRUE,Environment.NIL);
+            visit(ast.getValue().get());
+            requireAssignable(ast.getVariable().getType(), ast.getValue().get().getType());
         }
 
+        Environment.Type type ;
+
+        try {
+            type = Environment.getType(ast.getTypeName());
+        }catch(RuntimeException e){
+            type = ast.getValue().get().getType();
+        }
+
+        scope.defineVariable(ast.getName(),ast.getName(),type,Boolean.TRUE,Environment.NIL);
+        ast.setVariable(scope.lookupVariable(ast.getName()));
 
         return null;
     }
 
     @Override
     public Void visit(Ast.Function ast) {
-        throw new UnsupportedOperationException();  // TODO
+        Environment.Type type;
+
+        if (ast.getReturnTypeName().isPresent()){
+            type = Environment.getType(ast.getReturnTypeName().get());
+        }else {
+            type = Environment.Type.NIL;
+        }
+
+        scope.defineFunction(ast.getName(),ast.getName(),ast.getFunction().getParameterTypes(),type , args->Environment.NIL );
+        ast.setFunction(scope.lookupFunction(ast.getName(),ast.getParameters().size()));
+
+
+
+        return null;
     }
 
     @Override
@@ -73,23 +92,20 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Declaration ast) {
-
-        Environment.Type type;
-
-
-
-        if (ast.getValue().isPresent()) {
+        if (ast.getValue().isPresent()){
             visit(ast.getValue().get());
+            //requireAssignable(Environment.getType(ast.getTypeName().get()), ast.getValue().get().getType());
         }
 
+        Environment.Type type ;
 
-        if (ast.getTypeName().isPresent()){
-            type = ast.getVariable().getType();
-        }else type = ast.getValue().get().getType();
+        try {
+            type = Environment.getType(ast.getTypeName().get());
+        }catch(RuntimeException e){
+            type = ast.getValue().get().getType();
+        }
 
-        //scope.defineVariable(ast.getName(), ast.getName(),type,Boolean.FALSE,ast.getVariable().getValue());
-
-
+        ast.setVariable(scope.defineVariable(ast.getName(),ast.getName(),type,Boolean.TRUE,Environment.NIL));
 
         return null;
     }
@@ -115,7 +131,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
         if (!(ast.getCondition().getType().equals(Environment.Type.BOOLEAN)) ||
                 ( ast.getThenStatements().size()==0 )//empty then Statements
         ){
-            throw new RuntimeException("condition not of type boolean");
+            throw new RuntimeException("condition not of type boolean or empty set of then statements");
         }
 
         scope = new Scope(scope);//then statements
@@ -135,12 +151,26 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Switch ast) {
+        visit(ast.getCondition());
 
-            for (Ast.Statement stmt : ast.getCases() ) {
-                scope = new Scope(scope);
-                visit( stmt );
-                scope  = scope.getParent();
+        Environment.Type type = ast.getCondition().getType();
+
+        for (int i = 0; i < ast.getCases().size();i++ ) {
+            scope = new Scope(scope);
+            visit( ast.getCases().get(i) );
+
+            if (ast.getCases().get(i).getValue().isPresent() && !(ast.getCases().get(i).getValue().get().getType().equals(type)) ){
+                throw new RuntimeException("case type does not match condition type");
             }
+
+            if (i==ast.getCases().size()-1 && ast.getCases().get(i).getValue().isPresent()){
+                throw new RuntimeException("default case should not have value" + " cases size: "+ast.getCases().size() + " case num: " + i);
+            }
+
+
+            scope = scope.getParent();
+        }
+
         return null;
     }
 
