@@ -240,6 +240,14 @@ public class GeneratorTests {
                                 init(new Ast.Expression.Literal(BigInteger.TEN), ast -> ast.setType(Environment.Type.INTEGER))
                         ), ast -> ast.setType(Environment.Type.STRING)),
                         "\"Ben\" + 10"
+                ),
+                Arguments.of("pow",
+                        // 3^8
+                        init(new Ast.Expression.Binary("^",
+                                init(new Ast.Expression.Literal(3), ast -> ast.setType(Environment.Type.INTEGER)),
+                                init(new Ast.Expression.Literal(BigInteger.valueOf(8)), ast -> ast.setType(Environment.Type.INTEGER))
+                        ), ast -> ast.setType(Environment.Type.INTEGER)),
+                        "Math.pow(3, 8)"
                 )
         );
     }
