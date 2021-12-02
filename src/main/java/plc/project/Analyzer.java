@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -73,9 +74,11 @@ public final class Analyzer implements Ast.Visitor<Void> {
             type = Environment.Type.NIL;
         }
 
+
         List<Environment.Type> types = new ArrayList<Environment.Type>();
+
         for(int i = 0; i < ast.getParameterTypeNames().size();i++){
-            types.add(Environment.getType(ast.getParameterTypeNames().get(i)));
+           types.add(Environment.getType(ast.getParameterTypeNames().get(i)));
         }
 
         scope.defineFunction(ast.getName(),ast.getName(),types,type , args->Environment.NIL );
@@ -84,15 +87,13 @@ public final class Analyzer implements Ast.Visitor<Void> {
         scope = new Scope(scope);
 
         scope.defineVariable("returnType","returnType",type,Boolean.FALSE,
-                null);
+                null);//this is messy lol
 
         for (Ast.Statement stmt : ast.getStatements()) {
             visit(stmt);
         }
 
         scope = scope.getParent();
-
-
 
         return null;
     }
