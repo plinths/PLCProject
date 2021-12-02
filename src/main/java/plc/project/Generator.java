@@ -29,8 +29,7 @@ public final class Generator implements Ast.Visitor<Void> {
     }
 
     @Override
-    public Void visit(Ast.Source ast) {
-        throw new UnsupportedOperationException(); //TODO
+    public Void visit(Ast.Source ast) {throw new UnsupportedOperationException(); //TODO
     }
 
     @Override
@@ -50,7 +49,16 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Statement.Declaration ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print(ast.getVariable().getType().getJvmName(),
+                " ",
+                ast.getVariable().getJvmName());
+
+        if (ast.getValue().isPresent()){
+            print(" = ", ast.getValue().get());
+        }
+        print(";");
+
+        return null;
     }
 
     @Override
@@ -64,8 +72,8 @@ public final class Generator implements Ast.Visitor<Void> {
     }
 
     @Override
-    public Void visit(Ast.Statement.Switch ast) {
-        throw new UnsupportedOperationException(); //TODO
+    public Void visit(Ast.Statement.Switch ast) {throw new UnsupportedOperationException(); //TODO
+
     }
 
     @Override
@@ -85,7 +93,12 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Literal ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getType().equals(Environment.Type.CHARACTER) ||
+            ast.getType().equals(Environment.Type.STRING)){
+            print("\"",ast.getLiteral(),"\"");
+        } else print(ast.getLiteral());
+
+        return null;
     }
 
     @Override
@@ -105,7 +118,17 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expression.Function ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print(ast.getFunction().getJvmName());
+        print("(");
+        for(int i = 0; i < ast.getArguments().size(); i++){
+            print(ast.getArguments().get(i));
+            if (i!=ast.getArguments().size()-1){
+                print(",");
+            }
+        }
+        print(")");
+
+        return null;
     }
 
     @Override

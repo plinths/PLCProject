@@ -95,7 +95,22 @@ public class GeneratorTests {
                                 init(new Ast.Expression.Literal(new BigDecimal("1.0")),ast -> ast.setType(Environment.Type.DECIMAL))
                         )), ast -> ast.setVariable(new Environment.Variable("name", "name", Environment.Type.DECIMAL, true, Environment.NIL))),
                         "double name = 1.0;"
+                ),
+                Arguments.of("Initialization String",
+                        // LET name = "peloton";
+                        init(new Ast.Statement.Declaration("name", Optional.empty(), Optional.of(
+                                init(new Ast.Expression.Literal(new String("peloton")),ast -> ast.setType(Environment.Type.STRING))
+                        )), ast -> ast.setVariable(new Environment.Variable("name", "name", Environment.Type.STRING, true, Environment.NIL))),
+                        "String name = \"peloton\";"
+                ),
+                Arguments.of("Initialization Boolean",
+                        // LET name = TRUE;
+                        init(new Ast.Statement.Declaration("name", Optional.empty(), Optional.of(
+                                init(new Ast.Expression.Literal(new Boolean(Boolean.TRUE)),ast -> ast.setType(Environment.Type.BOOLEAN))
+                        )), ast -> ast.setVariable(new Environment.Variable("name", "name", Environment.Type.BOOLEAN, true, Environment.NIL))),
+                        "boolean name = true;"
                 )
+
         );
     }
 
